@@ -1,90 +1,55 @@
-import json
-import requests
-from ncclient import manager
-import xml.dom.minidom
-from netmiko import ConnectHandler
-
-# enviar un comando por ssh
-def ssh_command (command):
+from termcolor import colored
 
 
-    ssh_client = ConnectHandler(
-
-        device_type = 'cisco_ios',
-        host = '64.103.37.51',
-        port = '8181',
-        username = 'developer',
-        password = 'C1sco12345',
-    )
-
-    output = ssh_client.send_command(command)
-    return output
-
-
-
-
-
-
-# nueva interfaz con netconf
-def new_if (name, ip, mask, description):
-
-
-    m = manager.connect(
-        host = "64.103.37.51",
-        port = "10000",
-        username = "developer",
-        password = "C1sco12345",
-        hostkey_verify = None
-    )
-
-    new_if = """
-        <config>
-            <native xmlns="http://cisco.com/ns/yang/Cisco-IOS-XE-native">
-                <interface>
-                    <Loopback>
-                        <name>{}</name>
-                        <description>{}</description>
-                        <ip>
-                            <address>
-                                <primary>
-                                    <address>{}</address>
-                                    <mask>{}</mask>
-                                </primary>
-                            </address>
-                        </ip>
-                    </Loopback>
-                </interface>
-            </native>
-        </config>
-        """.format(name, description, ip, mask)
+def evaluate_warn (headers):
+    warn = 0
     try:
-        netconf_reply = m.edit_config(target="running", config=new_if)
+
+
+        if(headers['x-frame-options'] != "SAMEORIGIN"):
+            warn += 1
+            output = colored("WARNING\n Incorrect value for <x-frame-option> header", 'red')
+            print(output)
+
+        try:
+            headers['strict-transport-security']
+        except:
+            warn += 1
+            output = colored("WARNING\n Incorrect value for <strict-transport-security>", 'red')
+            print(output)
+
+        try:
+            headers['access-control-allow-origin']
+        except:
+            warn +=1
+            output = colored("WARNING\n Incorrect value for <access-control-allow-origin>", 'red')
+            print(output)
+
+
+        if (headers['content-security-policy'] == '*'):
+            warn += 1
+            output = colored("WARNING\n Incorrect value for <content-security-policy>", 'red')
+            print(output)
+
+        if headers['x-xss-protection']:
+            if headers['x-xss-protection'].lower() not in ['1', '1; mode=block']:
+                warn += 1
+                output = colored("WARNING\n Incorrect value for <x-xss-protection>", 'red')
+                print((output))
+
+        if header['x-content-type-options'].lower() != 'nosniff':
+                warn += 1
+                output = colored("WARNING\n Incorrect value for <x-content-type-options>", 'red')
+                print((output))
+
+        if headers['x-powered-by']['server']:
+            warn += 1
+            output = colored("WARNING\n Server version is disclosed", 'red')
+            print((output))
+
     except:
-        print("Check your input")
-        exit()
-    print("Interface added successfully")
-    return netconf_reply
+        if (warn > 0):
+            print(colored("Execution ended with some errors", 'red'))
 
-
-
-
-
-# eliminar interfaz con ssh
-def remove_if (if_name):
-
-
-    ssh_client = ConnectHandler(
-
-        device_type = 'cisco_ios',
-        host = '64.103.37.51',
-        port = '8181',
-        username = 'developer',
-        password = 'C1sco12345',
-    )
-
-    config_commands = ["no int {}".format(if_name)]
-
-    out_config = ssh_client.send_config_set(config_commands)
-    print("Configuracion realizada en el dispositivo:\n{}".format(out_config))
-    output_command = ssh_client.send_command("sh ip int br")
-    print("\n\n Interfaces:\n{}".format(output_command))
+    finally:
+        return warn
