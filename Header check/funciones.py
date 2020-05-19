@@ -11,7 +11,7 @@ def evaluate_warn (headers):
             output = colored("WARNING\n Incorrect value for <x-frame-option> header", 'red')
             print(output)
         else:
-            print(colored("\n<x-frame-option>", 'green'))
+            print(colored("<x-frame-option>", 'green'))
     except:
         warn += 1
         print(colored("WARNING\n <x-frame-option> header is empty", 'red'))
@@ -19,7 +19,7 @@ def evaluate_warn (headers):
 
     try:
         if (headers['strict-transport-security']):
-            print(colored("\nstrict-transport-security", "green"))
+            print(colored("strict-transport-security", "green"))
     except:
         warn += 1
         print(colored("WARNING\n Incorrect value for <strict-transport-security>", 'red'))
